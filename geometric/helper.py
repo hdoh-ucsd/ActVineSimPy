@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 import pickle
-from ompl import util as ou
 from ompl import base as ob
 from ompl import geometric as og
 from . import globals as G
@@ -187,8 +186,7 @@ def plotRRTAndBothPaths(planner, pdef, si, originalPath, smoothedPath):
     # regenerate arces for each edge
     edges = []
     for i in range(pd.numVertices()):
-        edge_list = ou.vectorUint()
-        pd.getEdges(i, edge_list)
+        edge_list = pd.getEdges(i)
         stParent = pd.getVertex(i).getState()
         px, py, pt = stParent.getX(), stParent.getY(), stParent.getYaw()
 
@@ -257,7 +255,8 @@ def plotRRTAndBothPaths(planner, pdef, si, originalPath, smoothedPath):
     # plotPath(smoothedPath, ax, 'black', linewidth = 3)
     # plotPathWithHalfNodes(originalPath, ax, 'yellowgreen')
     # special effects for start and goal nodes
-    start = pdef.getStartState(0)
+    # PlannerData returns a borrowed state; getStartState() can double-free it in OMPL 2.0.1.
+    start = pd.getStartVertex(0).getState()
     goal = pdef.getGoal().getState()
     ax.scatter(start.getX(), start.getY(), color='lime', s=100, edgecolors='black', zorder=10, label='Start')
     ax.scatter(goal.getX(), goal.getY(), color='red', s=100, edgecolors='black', zorder=10, label='Goal')

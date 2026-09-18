@@ -1,6 +1,5 @@
 from pathlib import Path
 import matplotlib.pyplot as plt
-from ompl import util as ou
 from ompl import base as ob
 from ompl import geometric as og
 import numpy as np
@@ -346,7 +345,7 @@ def createSpaceInformation():
     space.setBounds(bounds)
     
     si = ob.SpaceInformation(space)
-    si.setStateValidityChecker(ob.StateValidityCheckerFn(isStateValid))
+    si.setStateValidityChecker(isStateValid)
     si.setMotionValidator(ArcMotionValidator(si))
     si.setup()
     return si
@@ -428,8 +427,7 @@ def extract_points_and_costs(ob, si, planner):
     while queue:
         v = queue.popleft()
         cv = costs[v]  # parent's cost
-        edge_list = ou.vectorUint()
-        pd.getEdges(v, edge_list)
+        edge_list = pd.getEdges(v)
         for w in edge_list:
             if costs[w] is None:
                 costs[w] = cv + 1
@@ -438,8 +436,7 @@ def extract_points_and_costs(ob, si, planner):
     # -------- Collect all arcs (parent->child) along with child's cost --------
     arcs_with_costs = []
     for i in range(num_vertices):
-        edge_list = ou.vectorUint()
-        pd.getEdges(i, edge_list)
+        edge_list = pd.getEdges(i)
 
         # Parent state's pose
         stParent = pd.getVertex(i).getState()
@@ -493,16 +490,19 @@ def main(env, time, thresh, save=None, vine_thickness=0.1, save_points_path=None
     start_angles = np.radians(np.arange(-180, 180, 30))
     si = createSpaceInformation()
     pdef = ob.ProblemDefinition(si)
+    space = si.getStateSpace()
     
     for angle in start_angles:
-        startState = ob.State(si.getStateSpace())
-        startState[0] = start_x
-        startState[1] = start_y
-        startState[2] = angle
+        startState = space.allocState()
+        startState.setX(start_x)
+        startState.setY(start_y)
+        startState.setYaw(angle)
         pdef.addStartState(startState)
 
-    goalState = ob.State(si.getStateSpace())
-    goalState[0], goalState[1], goalState[2] = G.goal
+    goalState = space.allocState()
+    goalState.setX(G.goal[0])
+    goalState.setY(G.goal[1])
+    goalState.setYaw(G.goal[2])
 
     # pdef.addStartState(startState)
     # goalRegion = customGoalRegion(si, G.goal[0], G.goal[1], threshold=thresh)
